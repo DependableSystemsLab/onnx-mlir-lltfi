@@ -12,6 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "src/Compiler/CompilerOptions.hpp"
 #include "src/Conversion/ONNXToKrnl/ONNXToKrnlCommon.hpp"
 #include "src/Dialect/ONNX/ShapeInference/ONNXShapeHelper.hpp"
 
@@ -232,8 +233,10 @@ struct ONNXConvOpLowering : public ConversionPattern {
     convUnoptimized(rewriter, shapeHelper.scope, convOp, operandAdaptor,
         shapeHelper, memRefType, alloc);
 
-    KrnlBuilder createKrnl(rewriter, loc);
-    createKrnl.emitFICall("conv", alloc);
+    if (enableLLTFIfaultInjection) {
+        KrnlBuilder createKrnl(rewriter, loc);
+        createKrnl.emitFICall("conv", alloc);
+    }
 
     rewriter.replaceOp(op, alloc);
     return success();

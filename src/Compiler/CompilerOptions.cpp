@@ -146,6 +146,10 @@ llvm::cl::bits<InstrumentActions> instrumentControlBits(
         clEnumVal(InstrumentBeforeAndAfterOp, "insert instrument before and after op")),
     llvm::cl::cat(OnnxMlirOptions));
 
+llvm::cl::opt<bool> enableLLTFIfaultInjection("lltfi-fi",
+    llvm::cl::desc("Switch to toggle insertion of LLTFI's injectFault function call."),
+    llvm::cl::init(false), llvm::cl::cat(OnnxMlirOptions));
+
 llvm::cl::opt<bool> enableMemoryBundling("enable-memory-bundling",
     llvm::cl::desc(
         "Enable memory bundling related optimizations (default=false)\n"
