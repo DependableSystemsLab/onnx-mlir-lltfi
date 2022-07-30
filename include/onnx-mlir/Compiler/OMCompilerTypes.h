@@ -47,7 +47,8 @@ typedef enum {
   InstrumentBeforeOp,
   InstrumentAfterOp,
   InstrumentReportTime,
-  InstrumentReportMemory
+  InstrumentReportMemory,
+  InstrumentBeforeAndAfterOp
 } InstrumentActions;
 
 /* Onnx Mlir Compiler return code on errors */

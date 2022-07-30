@@ -142,7 +142,8 @@ llvm::cl::bits<InstrumentActions> instrumentControlBits(
         clEnumVal(
             InstrumentReportTime, "instrument runtime reports time usage"),
         clEnumVal(
-            InstrumentReportMemory, "instrument runtime reports memory usage")),
+            InstrumentReportMemory, "instrument runtime reports memory usage"),
+        clEnumVal(InstrumentBeforeAndAfterOp, "insert instrument before and after op")),
     llvm::cl::cat(OnnxMlirOptions));
 
 llvm::cl::opt<bool> enableMemoryBundling("enable-memory-bundling",

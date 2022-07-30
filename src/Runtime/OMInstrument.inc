@@ -157,7 +157,8 @@ enum InstrumentActions {
   InstrumentBeforeOp,
   InstrumentAfterOp,
   InstrumentReportTime,
-  InstrumentReportMemory
+  InstrumentReportMemory,
+  InstrumentBeforeAndAfterOp
 };
 
 void OMInstrumentInit() {

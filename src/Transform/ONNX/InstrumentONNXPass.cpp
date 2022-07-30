@@ -64,6 +64,9 @@ public:
       llvm::cl::desc("instrument runtime reports memory usage"),
       llvm::cl::init(false)};
 
+  Option<bool> instrumentBeforeAndAfter{*this, "instrument-before-and-after",
+      llvm::cl::desc("insert instrument before and after op"), llvm::cl::init(false)};
+
   InstrumentONNXPass() = default;
   InstrumentONNXPass(const InstrumentONNXPass &pass)
       : mlir::PassWrapper<InstrumentONNXPass, OperationPass<func::FuncOp>>() {}
@@ -73,6 +76,8 @@ public:
     this->instrumentAfter = actions & onnx_mlir::InstrumentAfterOp;
     this->reportTime = actions & onnx_mlir::InstrumentReportTime;
     this->reportMemory = actions & onnx_mlir::InstrumentReportMemory;
+    this->instrumentBeforeAndAfter =
+	    actions & (1 << onnx_mlir::InstrumentBeforeAndAfterOp);
   }
 
 private:
@@ -110,6 +115,10 @@ public:
       tag |= 1 << onnx_mlir::InstrumentReportTime;
     if (reportMemory)
       tag |= 1 << onnx_mlir::InstrumentReportMemory;
+    if (instrumentBeforeAndAfter) {
+      tag |= 1 << onnx_mlir::InstrumentBeforeOp;
+      tag |= 1 << onnx_mlir::InstrumentAfterOp;
+    }
     return tag;
   }
 
@@ -135,11 +144,12 @@ public:
 
         Location loc = op->getLoc();
         OpBuilder opBuilder(op);
-        if (instrumentBefore)
+        if (instrumentBefore || instrumentBeforeAndAfter)
           opBuilder.create<mlir::KrnlInstrumentOp>(loc, op, beforeTag());
 
         // Can not insert after Op (e.g. ONNXReturnOP) with IsTerminator Trait
-        if (instrumentAfter && !op->hasTrait<OpTrait::IsTerminator>()) {
+        if ((instrumentAfter || instrumentBeforeAndAfter) &&
+			!op->hasTrait<OpTrait::IsTerminator>()) {
           opBuilder.setInsertionPointAfter(op);
           opBuilder.create<mlir::KrnlInstrumentOp>(loc, op, afterTag());
         }
