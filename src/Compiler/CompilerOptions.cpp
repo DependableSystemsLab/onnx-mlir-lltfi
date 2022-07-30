@@ -486,7 +486,8 @@ static llvm::cl::bits<InstrumentActions, unsigned> instrumentControlBitsOpt(
         clEnumVal(
             InstrumentReportTime, "instrument runtime reports time usage,"),
         clEnumVal(InstrumentReportMemory,
-            "instrument runtime reports memory usage.")),
+            "instrument runtime reports memory usage."),
+        clEnumVal(InstrumentBeforeAndAfterOp, "insert instrument before and after op")),
     llvm::cl::cat(OnnxMlirOptions));
 
 static llvm::cl::opt<std::string, true> parallelizeOpsOpt("parallelize-ops",
