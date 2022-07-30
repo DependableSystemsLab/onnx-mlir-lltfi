@@ -501,6 +501,10 @@ static llvm::cl::opt<std::string, true> parallelizeOpsOpt("parallelize-ops",
     llvm::cl::location(parallelizeOps), llvm::cl::init(""),
     llvm::cl::cat(OnnxMlirOptions));
 
+static llvm::cl::opt<bool, true> enableLLTFIfaultInjectionOpt("lltfi-fi",
+    llvm::cl::desc("Switch to toggle insertion of LLTFI's injectFault function call."),
+    llvm::cl::init(false), llvm::cl::cat(OnnxMlirOptions));
+
 static llvm::cl::opt<std::string, true> instrumentSignatureOpt(
     "instrument-signature",
     llvm::cl::desc(
