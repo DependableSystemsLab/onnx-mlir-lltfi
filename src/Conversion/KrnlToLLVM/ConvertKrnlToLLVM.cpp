@@ -586,6 +586,7 @@ void populateKrnlToLLVMConversion(LLVMTypeConverter &typeConverter,
   krnl::populateLoweringKrnlMemcpyOpPattern(typeConverter, patterns, ctx);
   krnl::populateLoweringKrnlPrintOpPattern(typeConverter, patterns, ctx);
   krnl::populateLoweringKrnlPrintTensorOpPattern(typeConverter, patterns, ctx);
+  krnl::populateLoweringKrnlInjectFICallOpPattern(typeConverter, patterns, ctx);
   krnl::populateLoweringKrnlVectorTypeCastOpPattern(
       typeConverter, patterns, ctx);
   krnl::populateLoweringKrnlRandomNormalOpPattern(typeConverter, patterns, ctx);

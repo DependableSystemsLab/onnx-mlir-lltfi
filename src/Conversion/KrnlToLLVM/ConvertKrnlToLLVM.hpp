@@ -58,6 +58,10 @@ void populateLoweringKrnlPrintTensorOpPattern(
     mlir::TypeConverter &typeConverter, mlir::RewritePatternSet &patterns,
     mlir::MLIRContext *ctx);
 
+void populateLoweringKrnlInjectFICallOpPattern(
+    mlir::TypeConverter &typeConverter, mlir::RewritePatternSet &patterns,
+    mlir::MLIRContext *ctx);
+
 void populateLoweringKrnlRandomNormalOpPattern(
     mlir::TypeConverter &typeConverter, mlir::RewritePatternSet &patterns,
     mlir::MLIRContext *ctx);

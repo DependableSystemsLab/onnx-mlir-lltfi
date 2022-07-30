@@ -1117,6 +1117,15 @@ def KrnlPrintTensorOp : Op<Krnl_Dialect, "print_tensor", [MemRefsNormalizable]> 
   let arguments = (ins StrAttr:$msg, AnyMemRef:$input);
 } 
 
+def KrnlInjectFICallOp : Op<Krnl_Dialect, "emit_FIcall", [MemRefsNormalizable]> {
+  let summary = "LLTFI emit FI call.";
+  let description = [{
+    This operation can be used to emit a call to LLTFI's fault injection function.
+  }];
+
+  let arguments = (ins StrAttr:$msg, AnyMemRef:$input);
+}
+
 def KrnlPrintOp : Op<Krnl_Dialect, "print", [MemRefsNormalizable]> {
   let summary = "Print a value.";
   let description = [{

@@ -234,6 +234,11 @@ void KrnlBuilder::printTensor(StringRef msg, Value input) const {
   b.create<KrnlPrintTensorOp>(loc, msg, input);
 }
 
+void KrnlBuilder::emitFICall(StringRef operationName,
+		mlir::Value input) const {
+  b.create<KrnlInjectFICallOp>(loc, operationName, input);
+}
+
 void KrnlBuilder::printf(StringRef msg) const {
   Value noneValue;
   b.create<KrnlPrintOp>(loc, msg, noneValue);

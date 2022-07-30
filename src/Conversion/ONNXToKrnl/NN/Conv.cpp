@@ -232,6 +232,9 @@ struct ONNXConvOpLowering : public ConversionPattern {
     convUnoptimized(rewriter, shapeHelper.scope, convOp, operandAdaptor,
         shapeHelper, memRefType, alloc);
 
+    KrnlBuilder createKrnl(rewriter, loc);
+    createKrnl.emitFICall("conv", alloc);
+
     rewriter.replaceOp(op, alloc);
     return success();
   }

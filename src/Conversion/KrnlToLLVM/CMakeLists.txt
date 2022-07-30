@@ -9,6 +9,7 @@ add_onnx_mlir_library(OMKrnlToLLVM
   KrnlInstrument.cpp
   KrnlMemcpy.cpp
   KrnlPrintTensor.cpp
+  KrnlEmitFICall.cpp
   KrnlPrint.cpp
   KrnlRandomNormal.cpp
   KrnlStrlen.cpp
