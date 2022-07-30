@@ -254,6 +254,9 @@ struct ONNXConvOpLowering : public OpConversionPattern<ONNXConvOp> {
     MemRefType memRefType = mlir::cast<MemRefType>(alloc.getType());
     convUnoptimized(rewriter, convOp, adaptor, shapeHelper, memRefType, alloc);
 
+    KrnlBuilder createKrnl(rewriter, loc);
+    createKrnl.emitFICall("conv", alloc);
+
     rewriter.replaceOp(op, alloc);
     onnxToKrnlSimdReport(op);
     return success();
