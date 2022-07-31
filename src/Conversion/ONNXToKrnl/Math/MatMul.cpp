@@ -14,6 +14,7 @@
 
 #include "llvm/Support/Debug.h"
 
+#include "src/Compiler/CompilerOptions.hpp"
 #include "src/Conversion/ONNXToKrnl/ONNXToKrnlCommon.hpp"
 #include "src/Dialect/Krnl/DialectBuilder.hpp"
 #include "src/Dialect/Krnl/KrnlHelper.hpp"
@@ -324,6 +325,12 @@ struct ONNXMatMulOpLowering : public ConversionPattern {
           alloc, zero, rewriter, loc);
     }
     // Done.
+
+    if (enableLLTFIfaultInjection) {
+        KrnlBuilder createKrnl(rewriter, loc);
+        createKrnl.emitFICall("matmul", alloc);
+    }
+
     rewriter.replaceOp(op, alloc);
     return success();
   }

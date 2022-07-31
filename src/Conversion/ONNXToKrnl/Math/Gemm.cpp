@@ -14,6 +14,7 @@
 
 #include "llvm/Support/Debug.h"
 
+#include "src/Compiler/CompilerOptions.hpp"
 #include "src/Conversion/ONNXToKrnl/ONNXToKrnlCommon.hpp"
 #include "src/Dialect/Krnl/DialectBuilder.hpp"
 #include "src/Dialect/Krnl/KrnlHelper.hpp"
@@ -381,6 +382,12 @@ struct ONNXGemmOpLowering : public ConversionPattern {
       genericGemm(gemmOp, operandAdaptor, elementType, shapeHelper, alloc, zero,
           alpha, beta, rewriter, loc);
     }
+
+    if (enableLLTFIfaultInjection) {
+        KrnlBuilder createKrnl(rewriter, loc);
+        createKrnl.emitFICall("gemm", alloc);
+    }
+
     rewriter.replaceOp(op, alloc);
     return success();
   }
