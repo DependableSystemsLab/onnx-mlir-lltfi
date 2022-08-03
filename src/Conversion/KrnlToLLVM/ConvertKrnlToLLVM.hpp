@@ -62,6 +62,10 @@ void populateLoweringKrnlInjectFICallOpPattern(
     mlir::TypeConverter &typeConverter, mlir::RewritePatternSet &patterns,
     mlir::MLIRContext *ctx);
 
+void populateLoweringKrnlInjectFICallMatMulOpPattern(
+    mlir::TypeConverter &typeConverter, mlir::RewritePatternSet &patterns,
+    mlir::MLIRContext *ctx);
+
 void populateLoweringKrnlRandomNormalOpPattern(
     mlir::TypeConverter &typeConverter, mlir::RewritePatternSet &patterns,
     mlir::MLIRContext *ctx);

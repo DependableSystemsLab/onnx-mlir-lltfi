@@ -1123,7 +1123,16 @@ def KrnlInjectFICallOp : Op<Krnl_Dialect, "emit_FIcall", [MemRefsNormalizable]> 
     This operation can be used to emit a call to LLTFI's fault injection function.
   }];
 
-  let arguments = (ins StrAttr:$msg, AnyMemRef:$input);
+  let arguments = (ins StrAttr:$msg, AnyMemRef:$input, AnyMemRef:$input1);
+}
+
+def KrnlInjectFICallMatMulOp : Op<Krnl_Dialect, "emit_FIcall_matmul", [MemRefsNormalizable]> {
+  let summary = "LLTFI emit FI call for MatMul/Gemm operator.";
+  let description = [{
+    This operation can be used to emit a call to LLTFI's fault injection function.
+  }];
+
+  let arguments = (ins StrAttr:$msg, AnyMemRef:$output, AnyMemRef:$input1, AnyMemRef:$input2);
 }
 
 def KrnlPrintOp : Op<Krnl_Dialect, "print", [MemRefsNormalizable]> {

@@ -234,8 +234,24 @@ struct ONNXConvOpLowering : public ConversionPattern {
         shapeHelper, memRefType, alloc);
 
     if (enableLLTFIfaultInjection) {
+	auto filterOperand = operandAdaptor.W();
+	auto filterShape = filterOperand.getType().cast<ShapedType>().getShape();
+	auto filterRank = filterOperand.getType().cast<ShapedType>().getRank();
+	auto dil = shapeHelper.dilations;
+	auto pads = shapeHelper.pads;
+
+	assert(dil.size() == 2 && "I've assumed that strides and dilations are of 2 dims");
+
+	char *serializedData = new char[1000];
+	snprintf(serializedData, 1000, "%s;%s:%ld,%ld,%ld,%ld;%s:%ld,%ld;%s:%ld,%ld;%s:%ld,%ld,%ld,%ld\0",
+		 (op->getName().getStringRef().data() + 5),
+		 "kernel", filterShape[0], filterShape[1], filterShape[2], filterShape[3],
+		 "strides", shapeHelper.strides[0], shapeHelper.strides[1],
+		 "dilations", dil[0], dil[1],
+		 "paddings", pads[0].getLiteral(), pads[1].getLiteral(), pads[2].getLiteral(),
+		 pads[3].getLiteral());
         KrnlBuilder createKrnl(rewriter, loc);
-        createKrnl.emitFICall("conv", alloc);
+        createKrnl.emitFICall(serializedData, alloc, operandAdaptor.X());
     }
 
     rewriter.replaceOp(op, alloc);
