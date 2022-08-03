@@ -243,7 +243,8 @@ struct ONNXConvOpLowering : public ConversionPattern {
 	assert(dil.size() == 2 && "I've assumed that strides and dilations are of 2 dims");
 
 	char *serializedData = new char[1000];
-	snprintf(serializedData, 1000, "%s;%s:%ld,%ld,%ld,%ld;%s:%ld,%ld;%s:%ld,%ld;%s:%ld,%ld,%ld,%ld\0",
+	snprintf(serializedData, 1000,
+		 "%s %s %ld %ld %ld %ld %s %ld %ld %s %ld %ld %s %ld %ld %ld %ld",
 		 (op->getName().getStringRef().data() + 5),
 		 "kernel", filterShape[0], filterShape[1], filterShape[2], filterShape[3],
 		 "strides", shapeHelper.strides[0], shapeHelper.strides[1],
