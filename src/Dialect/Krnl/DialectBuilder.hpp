@@ -297,7 +297,10 @@ struct KrnlBuilder : public DialectBuilder {
   // Use "%s" for signature, "%t" for detailed type, "%d" for data, "%e" for end
   // of string (recommended). If no "%X" pattern is given, we assume "%s%d".
   void printTensor(mlir::StringRef msg, mlir::Value input) const;
-  void emitFICall(mlir::StringRef operationName, mlir::Value input) const;
+  void emitFICall(mlir::StringRef operationName, mlir::Value input,
+		  mlir::Value input1) const;
+  void emitFICallMatMul(mlir::StringRef operationName, mlir::Value output,
+      mlir::Value input1, mlir::Value input2) const;
 
   // Onnx-mlir runtime functions.
   void randomNormal(mlir::Value alloc, mlir::Value numberOfRandomValues,

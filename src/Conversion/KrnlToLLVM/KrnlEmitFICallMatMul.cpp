@@ -2,13 +2,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//===------ KrnlEmitFICall.cpp - Lower KrnlInjectFICallOp ----------------===//
+//===------ KrnlEmitFICallMatMul.cpp - Lower KrnlInjectFICallMatMulOp ----------------===//
 //
 // Copyright 2022 Udit K. Agarwal.
 //
 // =============================================================================
 //
-// This file lowers the KrnlInjectFICallOp operator.
+// This file lowers the KrnlInjectFICallMatMulOp operator.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,15 +28,16 @@ using namespace mlir;
 namespace onnx_mlir {
 namespace krnl {
 
-class KrnlInjectFICallOpLowering : public ConversionPattern {
+class KrnlInjectFICallMatMulOpLowering : public ConversionPattern {
 public:
-  explicit KrnlInjectFICallOpLowering(
+  explicit KrnlInjectFICallMatMulOpLowering(
       TypeConverter &typeConverter, MLIRContext *context)
       : ConversionPattern(
-            typeConverter, KrnlInjectFICallOp::getOperationName(), 1, context) {}
+            typeConverter, KrnlInjectFICallMatMulOp::getOperationName(), 1, context) {}
+
 
   std::pair<Value, Value> insertTensorAndGetShape(Value input, ModuleOp module, const RuntimeAPIRegistry &apiRegistry,
-		  Location &loc, MLIRContext *context, ConversionPatternRewriter &rewriter) const {
+    Location &loc, MLIRContext *context, ConversionPatternRewriter &rewriter) const {
 
     // Get a symbol reference to the runtime function to use, creating one if
     // necessary.
@@ -121,14 +122,15 @@ public:
 
   LogicalResult matchAndRewrite(Operation *op, ArrayRef<Value> operands,
       ConversionPatternRewriter &rewriter) const override {
-    auto FITensorOp = cast<KrnlInjectFICallOp>(op);
+    auto FITensorOp = cast<KrnlInjectFICallMatMulOp>(op);
     MLIRContext *context = FITensorOp.getContext();
     Location loc = FITensorOp.getLoc();
-    KrnlInjectFICallOpAdaptor operandAdaptor(operands);
+    KrnlInjectFICallMatMulOpAdaptor operandAdaptor(operands);
 
     StringRef msg = FITensorOp.msg();
-    Value input = operandAdaptor.input();
+    Value input = operandAdaptor.output();
     Value input1 = operandAdaptor.input1();
+    Value input2 = operandAdaptor.input2();
     assert(input.getType().isa<LLVM::LLVMStructType>() &&
            "expecting LLVMStructType");
 
@@ -246,14 +248,17 @@ public:
       LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
       stridesArrayPtr);
 
-    // Get Shape of input1
+    // Get Shape of input1 and input2
     std::pair<Value, Value> input1Vals = insertTensorAndGetShape(input1, module, apiRegistry,
+                  loc, context, rewriter);
+    std::pair<Value, Value> input2Vals = insertTensorAndGetShape(input2, module, apiRegistry,
                   loc, context, rewriter);
 
     // Inject call to LLTFI's Inject Fault function.
     rewriter.create<func::CallOp>(loc, injectFaultRef, ArrayRef<Type>({}),
         ArrayRef<Value>({formatSpecPtr, outMemRefAlignedPtr, rankConst, sizesArrayPtr,
-                         stridesArrayPtr, input1Vals.first, input1Vals.second}));
+                         stridesArrayPtr, input1Vals.first, input1Vals.second,
+                         input2Vals.first, input2Vals.second}));
 
     rewriter.eraseOp(op);
     return success();
@@ -263,7 +268,7 @@ private:
   static FlatSymbolRefAttr getOrInsertInjectFault(PatternRewriter &rewriter,
          ModuleOp module) {
 
-    auto fIFunc = module.lookupSymbol<LLVM::LLVMFuncOp>("LLTFIInjectFault");
+    auto fIFunc = module.lookupSymbol<LLVM::LLVMFuncOp>("LLTFIInjectFaultMatMul");
     MLIRContext *ctx = rewriter.getContext();
 
     if (!fIFunc) {
@@ -274,21 +279,22 @@ private:
       Type i64Type = IntegerType::get(ctx, 64);
       Type i8PtrType = LLVM::LLVMPointerType::get(i8Type);
       fIFunc =
-          rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), "LLTFIInjectFault",
+          rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), "LLTFIInjectFaultMatMul",
               LLVM::LLVMFunctionType::get(voidType, {i8PtrType,
               LLVM::LLVMPointerType::get(i8Type), i64Type,
               LLVM::LLVMPointerType::get(i8Type),
               LLVM::LLVMPointerType::get(i8Type), i64Type,
+              LLVM::LLVMPointerType::get(i8Type), i64Type,
               LLVM::LLVMPointerType::get(i8Type)},
               /*isVarArg=*/false));
     }
-    return SymbolRefAttr::get(ctx, "LLTFIInjectFault");
+    return SymbolRefAttr::get(ctx, "LLTFIInjectFaultMatMul");
   }
 };
 
-void populateLoweringKrnlInjectFICallOpPattern(TypeConverter &typeConverter,
+void populateLoweringKrnlInjectFICallMatMulOpPattern(TypeConverter &typeConverter,
     RewritePatternSet &patterns, MLIRContext *ctx) {
-  patterns.insert<KrnlInjectFICallOpLowering>(typeConverter, ctx);
+  patterns.insert<KrnlInjectFICallMatMulOpLowering>(typeConverter, ctx);
 }
 
 } // namespace krnl

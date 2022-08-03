@@ -552,7 +552,8 @@ struct ONNXMatMulOpLowering : public OpConversionPattern<ONNXMatMulOp> {
 
     if (enableLLTFIfaultInjection) {
         KrnlBuilder createKrnl(rewriter, loc);
-        createKrnl.emitFICall("matmul", alloc);
+        createKrnl.emitFICallMatMul("Matmul", alloc, operandAdaptor.A(),
+			operandAdaptor.B());
     }
 
     rewriter.replaceOp(op, alloc);

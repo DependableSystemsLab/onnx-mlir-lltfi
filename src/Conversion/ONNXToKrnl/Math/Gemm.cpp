@@ -470,8 +470,8 @@ struct ONNXGemmOpLowering : public OpConversionPattern<GemmOp> {
     }
 
     if (enableLLTFIfaultInjection) {
-        KrnlBuilder createKrnl(rewriter, loc);
-        createKrnl.emitFICall("gemm", alloc);
+	KrnlBuilder createKrnl(rewriter, loc);
+	createKrnl.emitFICallMatMul("gemm", alloc, operandAdaptor.A(), operandAdaptor.B());
     }
 
     rewriter.replaceOp(op, alloc);
