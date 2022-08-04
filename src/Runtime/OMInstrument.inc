@@ -61,6 +61,7 @@ static bool instrumentReportDisabled = false;
 static bool instrumentReportTimeDisabled = false;
 static bool instrumentReportMemoryDisabled = false;
 static int instrumentCounter = 0;
+static bool enablePrintStatements = false;
 static int psErrorCount = 0;
 static char instrumentReportOpName[INSTRUMENT_OP_NAME_MASK + 1];
 static char instrumentReportNodeName[INSTRUMENT_NODE_NAME_MASK + 1];
@@ -199,6 +200,10 @@ void OMInstrumentInit() {
   if (getenv("ONNX_MLIR_NO_INSTRUMENT")) {
     instrumentReportDisabled = true;
   }
+  if (getenv("ONNXINSTRUMENTPRINT")) {
+    enablePrintStatements = true;
+  }
+
   // Handle redirection to file if requested.
   getInstrumentFile();
 
@@ -222,6 +227,12 @@ void OMInstrumentPoint(const char *opName, int64_t iTag, const char *nodeName) {
       !instrumentReportTimeDisabled && IS_INSTRUMENT_REPORT_TIME(tag);
   bool reportMem =
       !instrumentReportMemoryDisabled && IS_INSTRUMENT_REPORT_MEMORY(tag);
+
+  if(enablePrintStatements)
+  // Print header
+    printf("#%3d) %s op=%8s", instrumentCounter,
+	   tag & (1 << (int)InstrumentBeforeOp) ? "before" : "after ", (char *)&id);
+  instrumentCounter++;
 
   if (initInstrument)
     OMInstrumentInit();
@@ -255,4 +266,7 @@ void OMInstrumentPoint(const char *opName, int64_t iTag, const char *nodeName) {
         instrumentReportNodeName, (isBefore ? "before" : "after"));
     ReportMemory();
   }
+
+  if (enablePrintStatements)
+    printf("\n");
 }
