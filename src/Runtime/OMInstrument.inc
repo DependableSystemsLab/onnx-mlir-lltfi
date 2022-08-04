@@ -57,6 +57,7 @@ static bool instrumentReportDisabled = false;
 static bool instrumentReportTimeDisabled = false;
 static bool instrumentReportMemoryDisabled = false;
 static int instrumentCounter = 0;
+static bool enablePrintStatements = false;
 
 #ifdef __MVS__
 #define timersub(a, b, result)                                                 \
@@ -171,6 +172,9 @@ void OMInstrumentInit() {
   if (getenv("NOOMINSTRUMENT")) {
     instrumentReportDisabled = true;
   }
+	if (getenv("ONNXINSTRUMENTPRINT")) {
+		enablePrintStatements = true;
+	}
 
   if (!instrumentReportDisabled) {
     TimeInit();
@@ -181,9 +185,10 @@ void OMInstrumentPoint(int64_t id, int64_t tag) {
   if (instrumentReportDisabled)
     return;
 
+	if(enablePrintStatements)
   // Print header
-  printf("#%3d) %s op=%8s", instrumentCounter,
-      tag & (1 << (int)InstrumentBeforeOp) ? "before" : "after ", (char *)&id);
+		printf("#%3d) %s op=%8s", instrumentCounter,
+				tag & (1 << (int)InstrumentBeforeOp) ? "before" : "after ", (char *)&id);
   instrumentCounter++;
 
   bool localReportTime =
@@ -198,5 +203,6 @@ void OMInstrumentPoint(int64_t id, int64_t tag) {
   if (localReportMemory) {
     ReportMemory();
   }
-  printf("\n");
+	if (enablePrintStatements)
+  	printf("\n");
 }
