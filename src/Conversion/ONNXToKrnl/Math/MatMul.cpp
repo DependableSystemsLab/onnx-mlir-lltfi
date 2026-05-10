@@ -553,7 +553,7 @@ struct ONNXMatMulOpLowering : public OpConversionPattern<ONNXMatMulOp> {
     if (enableLLTFIfaultInjection) {
         KrnlBuilder createKrnl(rewriter, loc);
         createKrnl.emitFICallMatMul((op->getName().getStringRef().data() + 5),
-            alloc, operandAdaptor.A(), operandAdaptor.B());
+            alloc, adaptor.getA(), adaptor.getB());
     }
 
     rewriter.replaceOp(op, alloc);

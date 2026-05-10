@@ -256,7 +256,7 @@ struct ONNXConvOpLowering : public OpConversionPattern<ONNXConvOp> {
     convUnoptimized(rewriter, convOp, adaptor, shapeHelper, memRefType, alloc);
 
     if (enableLLTFIfaultInjection) {
-	auto filterOperand = operandAdaptor.W();
+	auto filterOperand = adaptor.getW();
 	auto filterShape = filterOperand.getType().cast<ShapedType>().getShape();
 	auto filterRank = filterOperand.getType().cast<ShapedType>().getRank();
 	auto dil = shapeHelper.dilations;
@@ -274,7 +274,7 @@ struct ONNXConvOpLowering : public OpConversionPattern<ONNXConvOp> {
 		 "paddings", pads[0].getLiteral(), pads[1].getLiteral(), pads[2].getLiteral(),
 		 pads[3].getLiteral());
         KrnlBuilder createKrnl(rewriter, loc);
-        createKrnl.emitFICall(serializedData, alloc, operandAdaptor.X());
+        createKrnl.emitFICall(serializedData, alloc, adaptor.getX());
     }
 
     rewriter.replaceOp(op, alloc);

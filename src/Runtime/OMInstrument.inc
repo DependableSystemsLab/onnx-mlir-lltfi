@@ -231,7 +231,7 @@ void OMInstrumentPoint(const char *opName, int64_t iTag, const char *nodeName) {
   if(enablePrintStatements)
   // Print header
     printf("#%3d) %s op=%8s", instrumentCounter,
-	   tag & (1 << (int)InstrumentBeforeOp) ? "before" : "after ", (char *)&id);
+	   tag & (1 << (int)InstrumentBeforeOp) ? "before" : "after ", opName);
   instrumentCounter++;
 
   if (initInstrument)

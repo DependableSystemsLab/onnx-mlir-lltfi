@@ -476,13 +476,13 @@ void KrnlBuilder::printTensor(StringRef msg, Value input) const {
 
 void KrnlBuilder::emitFICall(StringRef operationName,
 		mlir::Value input, mlir::Value input1) const {
-  b.create<KrnlInjectFICallOp>(loc, operationName, input, input1);
+  b().create<KrnlInjectFICallOp>(loc(), operationName, input, input1);
 }
 
 void KrnlBuilder::emitFICallMatMul(StringRef operationName,
 		mlir::Value output, mlir::Value input1,
 		mlir::Value input2) const {
-  b.create<KrnlInjectFICallMatMulOp>(loc, operationName, output, input1, input2);
+  b().create<KrnlInjectFICallMatMulOp>(loc(), operationName, output, input1, input2);
 }
 
 void KrnlBuilder::printf(StringRef msg) const {

@@ -95,6 +95,7 @@ OptReport optReport;                                   // onnx-mlir only
 bool useOldBufferization;                              // onnx-mlir only
 bool enableTiming;                                     // onnx-mlir only
 bool enableBoundCheck;                                 // onnx-mlir only
+bool enableLLTFIfaultInjection;                        // onnx-mlir-lltfi only
 bool split_input_file;                                 // onnx-mlir-opt only
 bool verify_diagnostics;                               // onnx-mlir-opt only
 bool verify_passes;                                    // onnx-mlir-opt only
@@ -503,6 +504,7 @@ static llvm::cl::opt<std::string, true> parallelizeOpsOpt("parallelize-ops",
 
 static llvm::cl::opt<bool, true> enableLLTFIfaultInjectionOpt("lltfi-fi",
     llvm::cl::desc("Switch to toggle insertion of LLTFI's injectFault function call."),
+    llvm::cl::location(enableLLTFIfaultInjection),
     llvm::cl::init(false), llvm::cl::cat(OnnxMlirOptions));
 
 static llvm::cl::opt<std::string, true> instrumentSignatureOpt(

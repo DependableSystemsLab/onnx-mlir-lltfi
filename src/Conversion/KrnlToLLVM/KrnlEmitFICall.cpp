@@ -18,6 +18,8 @@
 #include "llvm/Support/Debug.h"
 #include "src/Dialect/Krnl/KrnlHelper.hpp"
 
+#include "onnx/onnx_pb.h"
+
 #include "mlir/Target/LLVMIR/TypeToLLVM.h"
 #include "llvm/ADT/TypeSwitch.h"
 
@@ -40,8 +42,8 @@ public:
 
     // Get a symbol reference to the runtime function to use, creating one if
     // necessary.
-    auto int64Ty = IntegerType::get(context, 64);
-    auto memRefTy = input.getType().dyn_cast<LLVM::LLVMStructType>();
+    auto int64Ty = rewriter.getI64Type();
+    auto memRefTy = cast<LLVM::LLVMStructType>(input.getType());
     auto memRefRank = krnl::getRankFromMemRefType(memRefTy);
     auto memRefRankVal = rewriter.create<LLVM::ConstantOp>(
         loc, int64Ty, rewriter.getI64IntegerAttr(memRefRank));
@@ -57,30 +59,29 @@ public:
     // Get Allocated pointer and convert it to i8*
     Value outMemRefAllocatedPtr =
       rewriter.create<LLVM::ExtractValueOp>(loc, memRefTy.getBody()[0],
-          input, rewriter.getArrayAttr({rewriter.getI64IntegerAttr(0)}));
+          input, ArrayRef<int64_t>{0});
 
     outMemRefAllocatedPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       outMemRefAllocatedPtr);
 
     // Get Aligned pointer and convert it to i8*
     Value outMemRefAlignedPtr =
       rewriter.create<LLVM::ExtractValueOp>(loc, memRefTy.getBody()[1],
-          input, rewriter.getArrayAttr({rewriter.getI64IntegerAttr(1)}));
+          input, ArrayRef<int64_t>{0});
 
     outMemRefAlignedPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       outMemRefAlignedPtr);
 
     // Set the data into the Tensor
     RuntimeAPI::callApi(rewriter, loc, apiRegistry, RuntimeAPI::API::SET_DATA,
       {omTensor, owning, outMemRefAllocatedPtr, outMemRefAlignedPtr});
 
-    Type elemTy =
-      memRefTy.getBody()[0].cast<LLVM::LLVMPointerType>().getElementType();
+    Type elemTy = dyn_cast<MemRefType>(memRefTy);
 
-    onnx::TensorProto::DataType onnxTy = krnl::mlirTypeToOnnxType(elemTy);
-    auto onnxTyVal = rewriter.create<LLVM::ConstantOp>(
+    int64_t onnxTy = krnl::mlirTypeToOnnxType(elemTy);
+    Value onnxTyVal = rewriter.create<LLVM::ConstantOp>(
       loc, int64Ty, rewriter.getI64IntegerAttr(onnxTy));
 
     // Set the data type of Tensor.
@@ -98,12 +99,10 @@ public:
 
       // Transfer size of dimension from memref to dynamic memref.
       auto dimSize = rewriter.create<LLVM::ExtractValueOp>(loc, int64Ty,
-          input,
-          rewriter.getArrayAttr(
-              {rewriter.getI64IntegerAttr(3), rewriter.getI64IntegerAttr(i)}));
+          input, ArrayRef<int64_t>{0});
       auto dimSizePtr =
-          rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(int64Ty),
-              sizesArrayPtr, ArrayRef<Value>({dimIdx}));
+          rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(context),
+              int64Ty, sizesArrayPtr, ValueRange{dimIdx});
       rewriter.create<LLVM::StoreOp>(loc, dimSize, dimSizePtr);
     }
 
@@ -113,7 +112,7 @@ public:
 
     // Convert DataShapePointer and Strides to i8*
     sizesArrayPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       sizesArrayPtr);
 
     return {rankConst, sizesArrayPtr};
@@ -126,20 +125,22 @@ public:
     Location loc = FITensorOp.getLoc();
     KrnlInjectFICallOpAdaptor operandAdaptor(operands);
 
-    StringRef msg = FITensorOp.msg();
-    Value input = operandAdaptor.input();
-    Value input1 = operandAdaptor.input1();
+    StringRef msg = FITensorOp.getMsg();
+    Value input = operandAdaptor.getOperands()[0];
+    Value input1 = operandAdaptor.getOperands()[1];
     assert(input.getType().isa<LLVM::LLVMStructType>() &&
            "expecting LLVMStructType");
 
     ModuleOp module = FITensorOp->getParentOfType<ModuleOp>();
-    const auto &apiRegistry = RuntimeAPIRegistry::build(module, rewriter);
+    const auto *typeConverter =
+        static_cast<const LLVMTypeConverter *>(getTypeConverter());
+    const auto &apiRegistry = RuntimeAPIRegistry(module, rewriter, *typeConverter);
 
 
     // Get a symbol reference to the runtime function to use, creating one if
     // necessary.
-    auto int64Ty = IntegerType::get(context, 64);
-    auto memRefTy = input.getType().dyn_cast<LLVM::LLVMStructType>();
+    auto int64Ty = rewriter.getI64Type();
+    auto memRefTy = cast<LLVM::LLVMStructType>(input.getType());
     auto memRefRank = krnl::getRankFromMemRefType(memRefTy);
     auto memRefRankVal = rewriter.create<LLVM::ConstantOp>(
         loc, int64Ty, rewriter.getI64IntegerAttr(memRefRank));
@@ -155,29 +156,28 @@ public:
     // Get Allocated pointer and convert it to i8*
     Value outMemRefAllocatedPtr =
       rewriter.create<LLVM::ExtractValueOp>(loc, memRefTy.getBody()[0],
-          input, rewriter.getArrayAttr({rewriter.getI64IntegerAttr(0)}));
+          input, ArrayRef<int64_t>{0});
 
     outMemRefAllocatedPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       outMemRefAllocatedPtr);
 
     // Get Aligned pointer and convert it to i8*
     Value outMemRefAlignedPtr =
       rewriter.create<LLVM::ExtractValueOp>(loc, memRefTy.getBody()[1],
-          input, rewriter.getArrayAttr({rewriter.getI64IntegerAttr(1)}));
+          input, ArrayRef<int64_t>{0});
 
     outMemRefAlignedPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       outMemRefAlignedPtr);
 
     // Set the data into the Tensor
     RuntimeAPI::callApi(rewriter, loc, apiRegistry, RuntimeAPI::API::SET_DATA,
       {omTensor, owning, outMemRefAllocatedPtr, outMemRefAlignedPtr});
 
-    Type elemTy =
-      memRefTy.getBody()[0].cast<LLVM::LLVMPointerType>().getElementType();
+    Type elemTy = dyn_cast<MemRefType>(memRefTy);
 
-    onnx::TensorProto::DataType onnxTy = krnl::mlirTypeToOnnxType(elemTy);
+    int64_t onnxTy = krnl::mlirTypeToOnnxType(elemTy);
     auto onnxTyVal = rewriter.create<LLVM::ConstantOp>(
       loc, int64Ty, rewriter.getI64IntegerAttr(onnxTy));
 
@@ -198,21 +198,18 @@ public:
 
       // Transfer size of dimension from memref to dynamic memref.
       auto dimSize = rewriter.create<LLVM::ExtractValueOp>(loc, int64Ty,
-          input,
-          rewriter.getArrayAttr(
-              {rewriter.getI64IntegerAttr(3), rewriter.getI64IntegerAttr(i)}));
+          input, ArrayRef<int64_t>{0});
       auto dimSizePtr =
-          rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(int64Ty),
-              sizesArrayPtr, ArrayRef<Value>({dimIdx}));
+          rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(context),
+              int64Ty, sizesArrayPtr, ValueRange{dimIdx});
       rewriter.create<LLVM::StoreOp>(loc, dimSize, dimSizePtr);
 
       // Transfer stride of dimension from memref to dynamic memref.
       auto dimStride = rewriter.create<LLVM::ExtractValueOp>(loc, int64Ty,
-                      input, rewriter.getArrayAttr(
-          {rewriter.getI64IntegerAttr(4), rewriter.getI64IntegerAttr(i)}));
+                      input, ArrayRef<int64_t>{0});
       auto dimStridePtr =
-          rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(int64Ty),
-          stridesArrayPtr, ArrayRef<Value>({dimIdx}));
+          rewriter.create<LLVM::GEPOp>(loc, LLVM::LLVMPointerType::get(context),
+          int64Ty, stridesArrayPtr, ValueRange{dimIdx});
       rewriter.create<LLVM::StoreOp>(loc, dimStride, dimStridePtr);
     }
 
@@ -221,16 +218,16 @@ public:
 
     // Convert operator name to a Global String
     LLVM::GlobalOp formatSpec = getOrCreateGlobalString(msg, loc, rewriter,
-        module, static_cast<LLVMTypeConverter *>(getTypeConverter()));
+        module, static_cast<const LLVMTypeConverter *>(getTypeConverter()));
     Value formatSpecPtr = getPtrToGlobalString(formatSpec, loc, rewriter);
 
     // Convert Data pointer to i8* type
     outMemRefAlignedPtr =
       rewriter.create<LLVM::ExtractValueOp>(loc, memRefTy.getBody()[1],
-          input, rewriter.getArrayAttr({rewriter.getI64IntegerAttr(1)}));
+          input, ArrayRef<int64_t>{0});
 
     outMemRefAlignedPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       outMemRefAlignedPtr);
 
     // COnvert rank to a constant
@@ -239,11 +236,11 @@ public:
 
     // Convert DataShapePointer and Strides to i8*
     sizesArrayPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       sizesArrayPtr);
 
     stridesArrayPtr = rewriter.create<LLVM::BitcastOp>(loc,
-      LLVM::LLVMPointerType::get(IntegerType::get(context, 8)),
+      LLVM::LLVMPointerType::get(context),
       stridesArrayPtr);
 
     // Get Shape of input1
@@ -270,16 +267,15 @@ private:
       OpBuilder::InsertionGuard guard(rewriter);
       rewriter.setInsertionPointToStart(module.getBody());
       auto voidType = LLVM::LLVMVoidType::get(ctx);
-      Type i8Type = IntegerType::get(ctx, 8);
-      Type i64Type = IntegerType::get(ctx, 64);
-      Type i8PtrType = LLVM::LLVMPointerType::get(i8Type);
+      Type i64Type = rewriter.getI64Type();
+      Type i8PtrType = LLVM::LLVMPointerType::get(ctx);
       fIFunc =
           rewriter.create<LLVM::LLVMFuncOp>(rewriter.getUnknownLoc(), "LLTFIInjectFault",
               LLVM::LLVMFunctionType::get(voidType, {i8PtrType,
-              LLVM::LLVMPointerType::get(i8Type), i64Type,
-              LLVM::LLVMPointerType::get(i8Type),
-              LLVM::LLVMPointerType::get(i8Type), i64Type,
-              LLVM::LLVMPointerType::get(i8Type)},
+              i8PtrType, i64Type,
+              i8PtrType,
+              i8PtrType, i64Type,
+              i8PtrType},
               /*isVarArg=*/false));
     }
     return SymbolRefAttr::get(ctx, "LLTFIInjectFault");
